@@ -1,1 +1,2 @@
-This file was created by IntelliJ IDEA 11.1.3 for binding GitHub repository
+This plugin adds another inspection for javascript files to check whether all the google closure classes are imported properly.
+If the class is not imported it will give an error. It is possible to click on the error statement and get a quick fix bubble to auto import those missing classes
