@@ -1,0 +1,32 @@
+<idea-plugin version="2">
+    <name>Google Closure Require Statement Checker</name>
+    <description>This plugin adds another inspection for javascript files to check whether all the google closure classes are imported properly.
+        If the class is not imported it will give an error. It is possible to click on the error statement and get a quick fix bubble to auto import those missing classes
+    </description>
+    <version>1.0.6</version>
+    <vendor>CMC Markets</vendor>
+
+    <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
+    <idea-version since-build="107.105"/>
+
+    <application-components>
+        <!-- Add your application components here -->
+    </application-components>
+
+    <project-components>
+        <!-- Add your project components here -->
+    </project-components>
+
+    <actions>
+        <!-- Add your actions here -->
+        <!--<action id="ClosurePlugin.ValidateRequireStatementsAction" class="ValidateRequireStatementsAction"-->
+        <!--text="Validate Require Statements">-->
+        <!--<add-to-group group-id="InspectCodeGroup" anchor="first"/>-->
+        <!--</action>-->
+    </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+        <inspectionToolProvider id="validateRequireStatements" implementation="com.cmcmarkets.closure.ValidateRequireStatementsProvider" order="LAST"/>
+    </extensions>
+</idea-plugin>
