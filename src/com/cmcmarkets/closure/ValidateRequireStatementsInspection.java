@@ -17,6 +17,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This document and its contents are protected by copyright 2011 and owned by CMC Markets UK Plc.
@@ -28,6 +30,27 @@ import java.util.TreeSet;
  */
 public class ValidateRequireStatementsInspection extends LocalInspectionTool
 {
+    private static Set<String> allowedKeywords;
+    private static Pattern CONSTANT_PATTERN = Pattern.compile("[A-Z0-9_]+");
+    private static Pattern CLASS_PATTERN = Pattern.compile("[A-Z]{1}[a-zA-Z1-9]+");
+
+    static
+    {
+        allowedKeywords = new HashSet<String>();
+        allowedKeywords.add("Math");
+        allowedKeywords.add("Number");
+        allowedKeywords.add("String");
+        allowedKeywords.add("Boolean");
+        allowedKeywords.add("Array");
+        allowedKeywords.add("Blob");
+        allowedKeywords.add("Date");
+        allowedKeywords.add("Object");
+        allowedKeywords.add("RegEx");
+        allowedKeywords.add("Text");
+        allowedKeywords.add("goog");
+        allowedKeywords.add("JSON");
+    }
+
     private final LocalQuickFix singleQuickFix = new SingleRequireStatementFix();
     private final LocalQuickFix multipleQuickFix = new MultipleRequireStatementFix();
 
@@ -37,7 +60,6 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
     private Set<PsiElement> errorElementSet;
     private PsiElement lastRequireElement;
     private Set<String> provideSet;
-    private PsiFile psiFile;
     private boolean requireElementFound = false;
 
     @NotNull
@@ -85,8 +107,6 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         public void visitFile(final PsiFile file)
         {
             super.visitFile(file);
-
-            psiFile = file;
 
             if(!file.getFileType().getDefaultExtension().equals("js"))
             {
@@ -218,28 +238,6 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
             }
         }
 
-        private void processReferenceExpression(final PsiElement element, final String reference)
-        {
-            boolean localVar = false;
-            int index = reference.indexOf(".");
-
-            if(index != -1)
-            {
-                localVar = localVariableSet.contains(reference.substring(0, index));
-            }
-
-            if(!reference.contains(".") || reference.startsWith("this.") || reference.contains("prototype") || localVar || provideSet.contains(reference))
-            {
-                return;
-            }
-
-
-            if(!requireSet.contains(reference))
-            {
-                highlightElement(element);
-            }
-        }
-
         private void processJSCallExpression(final PsiElement element)
         {
             boolean requireStatement = false;
@@ -292,15 +290,113 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                     }
                 }
 
-                if(!requireStatement || !provideStatement)
+                if(!requireStatement && !provideStatement)
                 {
-                    final PsiElement firstChild = child.getFirstChild();
-                    if(firstChild != null && firstChild.getText().contains("."))
+                    if(child.toString().equals("JSReferenceExpression"))
                     {
-                        processReferenceExpression(firstChild, firstChild.getText());
+                        PsiElement firstChild = child.getFirstChild();
+
+                        if(firstChild != null && firstChild.toString().equals("JSCallExpression"))
+                        {
+                            processJSCallExpression(firstChild);
+                        }
+                        else
+                        {
+                            processReferenceExpression(child, child.getText());
+                        }
+
+                    }
+                    else
+                    {
+                        processElements(child);
                     }
                 }
             }
+        }
+
+        private void processReferenceExpression(final PsiElement element, final String reference)
+        {
+            boolean localVar;
+            boolean allowedKeyword;
+            boolean provideKeyword;
+            boolean includeLastElement;
+
+            int index = reference.lastIndexOf(".");
+
+            if(index != -1)
+            {
+                String definition = reference.substring(0, index);
+                final String identifier = reference.substring(index + 1);
+
+                Matcher matcher = CONSTANT_PATTERN.matcher(identifier);
+                includeLastElement = !matcher.matches();
+
+                if(includeLastElement)
+                {
+                    //Don't include method calls
+                    includeLastElement = !element.getParent().toString().equals("JSCallExpression");
+                }
+
+                if(includeLastElement)
+                {
+                    matcher = CLASS_PATTERN.matcher(definition);
+                    includeLastElement = !matcher.matches();
+                }
+
+                PsiElement elementToTest = null;
+
+                if(includeLastElement)
+                {
+                    definition = reference;
+                    elementToTest = element;
+
+                    if(definition.contains(".") && !definition.startsWith("this") && !definition.contains(".prototype"))
+                    {
+                        String firstElement = definition.substring(0, definition.indexOf("."));
+
+                        if(!shouldHighlight(firstElement) && !allowedKeywords.contains(firstElement))
+                        {
+                            return;
+                        }
+
+                    }
+                }
+                else
+                {
+                    if(definition.contains(".") && !definition.startsWith("this") && !definition.contains(".prototype"))
+                    {
+                        PsiElement firstChild = element.getFirstChild();
+                        if(firstChild != null && firstChild.toString().equals("JSReferenceExpression"))
+                        {
+                            processReferenceExpression(firstChild, firstChild.getText());
+                        }
+                    }
+                    else
+                    {
+                        elementToTest = element.getFirstChild();
+                    }
+                }
+
+                if(shouldHighlight(definition) && elementToTest != null)
+                {
+                    highlightElement(elementToTest);
+                }
+            }
+        }
+
+        private boolean shouldHighlight(final String definition)
+        {
+            final boolean localVar;
+            final boolean allowedKeyword;
+            final boolean provideKeyword;
+            final boolean imported;
+
+            localVar = localVariableSet.contains(definition);
+            allowedKeyword = allowedKeywords.contains(definition);
+            provideKeyword = provideSet.contains(definition);
+            imported = requireSet.contains(definition);
+
+            return !(allowedKeyword || localVar || provideKeyword || imported || definition.startsWith("this") || definition.contains(".prototype"));
         }
 
         private void processVarStatement(final PsiElement element)
