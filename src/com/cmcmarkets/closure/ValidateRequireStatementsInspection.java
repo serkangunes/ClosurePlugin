@@ -127,24 +127,19 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
                     int result;
 
-                    if(o1Text.startsWith("goog.require(\"goog.") && o2Text.startsWith("goog.require(\"goog."))
+                    boolean o1Starts = o1Text.startsWith("goog.require(\"goog.")||o1Text.startsWith("goog.require('goog.");
+                    boolean o2Starts = o2Text.startsWith("goog.require(\"goog.")||o2Text.startsWith("goog.require('goog.");
+                    if((o1Starts && o2Starts)||(!o1Starts && !o2Starts))
                     {
-                        result = o2.getText().compareTo(o1.getText());
+                        result = o2Text.compareTo(o1Text);
                     }
-                    else if(o1.getText().startsWith("goog.require(\"goog.") && !o2Text.startsWith("goog.require(\"goog."))
+                    else if(o1Starts)
                     {
                         result = 1;
-                    }
-                    else if(!o1.getText().startsWith("goog.require(\"goog.") && o2Text.startsWith("goog.require(\"goog."))
+                    } else
                     {
-                        result = -1;
+                        result = o2Text.compareTo(o1Text);
                     }
-                    else
-                    {
-                        result = o2.getText().compareTo(o1.getText());
-                    }
-
-
                     return result;
                 }
             });
@@ -227,7 +222,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                         {
                             if(argument.toString().startsWith("PsiLiteralExpression"))
                             {
-                                requireSet.add(argument.getText().replace("\"", ""));
+                                requireSet.add(removeQuotes(argument.getText()));
                                 lastRequireElement = element.getParent();
                                 requireElementSet.add(element.getParent());
                                 requireElementFound = true;
@@ -263,7 +258,8 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                         {
                             if(argument.toString().equals("JSLiteralExpression"))
                             {
-                                requireSet.add(argument.getText().replace("\"", ""));
+                                String replace = removeQuotes(argument.getText());
+                                requireSet.add(replace);
                                 lastRequireElement = element.getParent();
                                 requireElementSet.add(element.getParent());
                                 requireElementFound = true;
@@ -280,7 +276,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                         {
                             if(argument.toString().equals("JSLiteralExpression"))
                             {
-                                provideSet.add(argument.getText().replace("\"", ""));
+                                provideSet.add(removeQuotes(argument.getText()));
                                 if(!requireElementFound)
                                 {
                                     lastRequireElement = element.getParent();
@@ -312,6 +308,15 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                     }
                 }
             }
+        }
+
+        /**
+         * removes both single and double quotes
+         * @param text
+         * @return
+         */
+        private String removeQuotes(String text) {
+            return text.replaceAll("\"|'", "");
         }
 
         private void processReferenceExpression(final PsiElement element, final String reference)
