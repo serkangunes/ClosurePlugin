@@ -3,7 +3,7 @@
     <description>This plugin adds another inspection for javascript files to check whether all the google closure classes are imported properly.
         If the class is not imported it will give an error. It is possible to click on the error statement and get a quick fix bubble to auto import those missing classes
     </description>
-    <version>1.0.6</version>
+    <version>1.0.8</version>
     <vendor>CMC Markets</vendor>
 
     <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->

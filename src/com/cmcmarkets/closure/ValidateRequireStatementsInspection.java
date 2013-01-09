@@ -49,6 +49,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         allowedKeywords.add("Text");
         allowedKeywords.add("goog");
         allowedKeywords.add("JSON");
+        allowedKeywords.add("...*");
     }
 
     private final LocalQuickFix singleQuickFix = new SingleRequireStatementFix();
@@ -127,16 +128,17 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
                     int result;
 
-                    boolean o1Starts = o1Text.startsWith("goog.require(\"goog.")||o1Text.startsWith("goog.require('goog.");
-                    boolean o2Starts = o2Text.startsWith("goog.require(\"goog.")||o2Text.startsWith("goog.require('goog.");
-                    if((o1Starts && o2Starts)||(!o1Starts && !o2Starts))
+                    boolean o1Starts = o1Text.startsWith("goog.require(\"goog.") || o1Text.startsWith("goog.require('goog.");
+                    boolean o2Starts = o2Text.startsWith("goog.require(\"goog.") || o2Text.startsWith("goog.require('goog.");
+                    if((o1Starts && o2Starts) || (!o1Starts && !o2Starts))
                     {
                         result = o2Text.compareTo(o1Text);
                     }
                     else if(o1Starts)
                     {
                         result = 1;
-                    } else
+                    }
+                    else
                     {
                         result = o2Text.compareTo(o1Text);
                     }
@@ -312,10 +314,12 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
         /**
          * removes both single and double quotes
+         *
          * @param text
          * @return
          */
-        private String removeQuotes(String text) {
+        private String removeQuotes(String text)
+        {
             return text.replaceAll("\"|'", "");
         }
 
