@@ -4,4 +4,4 @@ google closure classes are imported properly.
 If the class is not imported it will give an error. It is possible to click on the error statement 
 and get a quick fix bubble to auto import those missing classes
 
-Version 1.0.8 of the plugin is still waiting to be approved. This includes imports bug and wildcard bug.
+Version 1.0.8 is ready to download. This includes imports bug and wildcard bug.
