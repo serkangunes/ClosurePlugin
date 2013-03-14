@@ -5,7 +5,7 @@
         If the class is not imported it will give an error. It is possible to click on the error statement and get a
         quick fix bubble to auto import those missing classes
     </description>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
     <vendor>CMC Markets</vendor>
 
     <depends>com.intellij.modules.lang</depends>
