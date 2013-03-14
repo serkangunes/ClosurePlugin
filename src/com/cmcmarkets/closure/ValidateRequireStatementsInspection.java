@@ -320,7 +320,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         /**
          * removes both single and double quotes
          *
-         * @param text
+         * @param text string text
          * @return
          */
         private String removeQuotes(String text)
@@ -355,6 +355,12 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                 {
                     matcher = CLASS_PATTERN.matcher(definition);
                     includeLastElement = !matcher.matches();
+                }
+
+                if (includeLastElement)
+                {
+                    matcher = CLASS_PATTERN.matcher(identifier);
+                    includeLastElement = matcher.matches();
                 }
 
                 PsiElement elementToTest = null;
