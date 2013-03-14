@@ -357,10 +357,27 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                     includeLastElement = !matcher.matches();
                 }
 
-                if (includeLastElement)
+                if(includeLastElement)
                 {
-                    matcher = CLASS_PATTERN.matcher(identifier);
-                    includeLastElement = matcher.matches();
+                    String[] elements = reference.split("\\.");
+
+                    boolean classFound = false;
+
+                    for (String currentElement : elements)
+                    {
+                        matcher = CLASS_PATTERN.matcher(currentElement);
+                        classFound = matcher.matches();
+                        if (classFound)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (classFound)
+                    {
+                        matcher = CLASS_PATTERN.matcher(identifier);
+                        includeLastElement = matcher.matches();
+                    }
                 }
 
                 PsiElement elementToTest = null;
