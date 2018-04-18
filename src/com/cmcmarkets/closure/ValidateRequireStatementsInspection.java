@@ -61,6 +61,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
     private Set<PsiElement> requireElementSet;
     private Set<PsiElement> errorElementSet;
     private PsiElement lastRequireElement;
+    private PsiElement root;
     private Set<String> provideSet;
     private boolean requireElementFound = false;
 
@@ -110,7 +111,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         {
             super.visitFile(file);
 
-            if(!file.getFileType().getDefaultExtension().equals("js"))
+            if (!file.getFileType().getDefaultExtension().equals("js"))
             {
                 return;
             }
@@ -131,11 +132,11 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
                     boolean o1Starts = o1Text.startsWith("goog.require(\"goog.") || o1Text.startsWith("goog.require('goog.");
                     boolean o2Starts = o2Text.startsWith("goog.require(\"goog.") || o2Text.startsWith("goog.require('goog.");
-                    if((o1Starts && o2Starts) || (!o1Starts && !o2Starts))
+                    if ((o1Starts && o2Starts) || (!o1Starts && !o2Starts))
                     {
                         result = o2Text.compareTo(o1Text);
                     }
-                    else if(o1Starts)
+                    else if (o1Starts)
                     {
                         result = 1;
                     }
@@ -155,30 +156,35 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         {
             final PsiElement[] children = element.getChildren();
 
-            for(PsiElement child : children)
+            for (PsiElement child : children)
             {
                 PsiElement firstChild = child.getFirstChild();
 
-                if(child.toString().equals("JSCallExpression") && firstChild != null && firstChild.toString().equals("JSReferenceExpression"))
+                if (root == null)
+                {
+                    root = child;
+                }
+
+                if (child.toString().equals("JSCallExpression") && firstChild != null && firstChild.toString().equals("JSReferenceExpression"))
                 {
                     processJSCallExpression(child);
                 }
-                else if(child.toString().equals("PsiExpressionStatement"))
+                else if (child.toString().equals("PsiExpressionStatement"))
                 {
                     processPsiExpressionStatement(child);
                 }
-                else if(child.toString().equals("JSReferenceExpression"))
+                else if (child.toString().equals("JSReferenceExpression"))
                 {
                     processReferenceExpression(child, child.getText());
                 }
-                else if(child.toString().equals("JSDocTagValue"))
+                else if (child.toString().equals("JSDocTagValue"))
                 {
-                    if(child.getText().contains("<"))
+                    if (child.getText().contains("<"))
                     {
                         final String reference = child.getText().substring(child.getText().indexOf("<") + 1, child.getText().indexOf(">"));
                         processReferenceExpression(child, reference);
                     }
-                    else if(child.getText().contains("."))
+                    else if (child.getText().contains("."))
                     {
                         final String reference = child.getText().replace("{", "").replace("}", "");
                         processReferenceExpression(child, reference);
@@ -186,15 +192,15 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                 }
                 else
                 {
-                    if(child.toString().equals("JSLocalVariable"))
+                    if (child.toString().equals("JSLocalVariable"))
                     {
                         processVarStatement(child);
                     }
-                    if(child.toString().equals("JSVariable"))
+                    if (child.toString().equals("JSVariable"))
                     {
                         processVarStatement(child);
                     }
-                    if(child.toString().equals("JSParameter"))
+                    if (child.toString().equals("JSParameter"))
                     {
                         processVarStatement(child);
                     }
@@ -209,25 +215,25 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
             final PsiElement firstChild = element.getFirstChild();
 
-            if(firstChild == null)
+            if (firstChild == null)
             {
                 return;
             }
 
-            for(PsiElement child : firstChild.getChildren())
+            for (PsiElement child : firstChild.getChildren())
             {
-                if(child.toString().startsWith("PsiReferenceExpression") && child.getText().equals("goog.require"))
+                if (child.toString().startsWith("PsiReferenceExpression") && child.getText().equals("goog.require"))
                 {
                     requireStatement = true;
                 }
 
-                if(requireStatement)
+                if (requireStatement)
                 {
-                    if(child.toString().startsWith("PsiExpressionList"))
+                    if (child.toString().startsWith("PsiExpressionList"))
                     {
-                        for(PsiElement argument : child.getChildren())
+                        for (PsiElement argument : child.getChildren())
                         {
-                            if(argument.toString().startsWith("PsiLiteralExpression"))
+                            if (argument.toString().startsWith("PsiLiteralExpression"))
                             {
                                 requireSet.add(removeQuotes(argument.getText()));
                                 lastRequireElement = element.getParent();
@@ -245,25 +251,25 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
             boolean requireStatement = false;
             boolean provideStatement = false;
 
-            for(PsiElement child : element.getChildren())
+            for (PsiElement child : element.getChildren())
             {
-                if(child.toString().equals("JSReferenceExpression") && child.getText().equals("goog.require"))
+                if (child.toString().equals("JSReferenceExpression") && child.getText().equals("goog.require"))
                 {
                     requireStatement = true;
                 }
 
-                if(child.toString().equals("JSReferenceExpression") && child.getText().equals("goog.provide"))
+                if (child.toString().equals("JSReferenceExpression") && child.getText().equals("goog.provide"))
                 {
                     provideStatement = true;
                 }
 
-                if(requireStatement)
+                if (requireStatement)
                 {
-                    if(child.toString().equals("JSArgumentList"))
+                    if (child.toString().equals("JSArgumentList"))
                     {
-                        for(PsiElement argument : child.getChildren())
+                        for (PsiElement argument : child.getChildren())
                         {
-                            if(argument.toString().equals("JSLiteralExpression"))
+                            if (argument.toString().equals("JSLiteralExpression"))
                             {
                                 String replace = removeQuotes(argument.getText());
                                 requireSet.add(replace);
@@ -275,16 +281,16 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                     }
                 }
 
-                if(provideStatement)
+                if (provideStatement)
                 {
-                    if(child.toString().equals("JSArgumentList"))
+                    if (child.toString().equals("JSArgumentList"))
                     {
-                        for(PsiElement argument : child.getChildren())
+                        for (PsiElement argument : child.getChildren())
                         {
-                            if(argument.toString().equals("JSLiteralExpression"))
+                            if (argument.toString().equals("JSLiteralExpression"))
                             {
                                 provideSet.add(removeQuotes(argument.getText()));
-                                if(!requireElementFound)
+                                if (!requireElementFound)
                                 {
                                     lastRequireElement = element.getParent();
                                 }
@@ -293,13 +299,13 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                     }
                 }
 
-                if(!requireStatement && !provideStatement)
+                if (!requireStatement && !provideStatement)
                 {
-                    if(child.toString().equals("JSReferenceExpression"))
+                    if (child.toString().equals("JSReferenceExpression"))
                     {
                         PsiElement firstChild = child.getFirstChild();
 
-                        if(firstChild != null && firstChild.toString().equals("JSCallExpression"))
+                        if (firstChild != null && firstChild.toString().equals("JSCallExpression"))
                         {
                             processJSCallExpression(firstChild);
                         }
@@ -337,7 +343,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
             int index = reference.lastIndexOf(".");
 
-            if(index != -1)
+            if (index != -1)
             {
                 String definition = reference.substring(0, index);
                 final String identifier = reference.substring(index + 1);
@@ -345,19 +351,19 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                 Matcher matcher = CONSTANT_PATTERN.matcher(identifier);
                 includeLastElement = !matcher.matches();
 
-                if(includeLastElement)
+                if (includeLastElement)
                 {
                     //Don't include method calls
                     includeLastElement = !element.getParent().toString().equals("JSCallExpression");
                 }
 
-                if(includeLastElement)
+                if (includeLastElement)
                 {
                     matcher = CLASS_PATTERN.matcher(definition);
                     includeLastElement = !matcher.matches();
                 }
 
-                if(includeLastElement)
+                if (includeLastElement)
                 {
                     String[] elements = reference.split("\\.");
 
@@ -382,16 +388,16 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
                 PsiElement elementToTest = null;
 
-                if(includeLastElement)
+                if (includeLastElement)
                 {
                     definition = reference;
                     elementToTest = element;
 
-                    if(definition.contains(".") && !definition.startsWith("this") && !definition.contains(".prototype"))
+                    if (definition.contains(".") && !definition.startsWith("this") && !definition.contains(".prototype"))
                     {
                         String firstElement = definition.substring(0, definition.indexOf("."));
 
-                        if(!shouldHighlight(firstElement) && !allowedKeywords.contains(firstElement))
+                        if (!shouldHighlight(firstElement) && !allowedKeywords.contains(firstElement))
                         {
                             return;
                         }
@@ -400,10 +406,10 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                 }
                 else
                 {
-                    if(definition.contains(".") && !definition.startsWith("this") && !definition.contains(".prototype"))
+                    if (definition.contains(".") && !definition.startsWith("this") && !definition.contains(".prototype"))
                     {
                         PsiElement firstChild = element.getFirstChild();
-                        if(firstChild != null && firstChild.toString().equals("JSReferenceExpression"))
+                        if (firstChild != null && firstChild.toString().equals("JSReferenceExpression"))
                         {
                             processReferenceExpression(firstChild, firstChild.getText());
                         }
@@ -414,7 +420,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                     }
                 }
 
-                if(shouldHighlight(definition) && elementToTest != null)
+                if (shouldHighlight(definition) && elementToTest != null)
                 {
                     highlightElement(elementToTest);
                 }
@@ -440,7 +446,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         {
             String localVar = element.getText();
             final int index = element.getText().indexOf(" ");
-            if(index != -1)
+            if (index != -1)
             {
                 localVar = element.getText().substring(0, index);
             }
@@ -457,9 +463,9 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
         private void dumpElement(PsiElement element, String space, boolean dumpChildren)
         {
             System.out.println(space + element + "::" + element.getText());
-            if(dumpChildren)
+            if (dumpChildren)
             {
-                for(PsiElement child : element.getChildren())
+                for (PsiElement child : element.getChildren())
                 {
                     dumpElement(child, space + "    ", dumpChildren);
                 }
@@ -484,7 +490,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
             StringBuilder statement = new StringBuilder("goog.require(\"");
             String text = element.getText().replace("{", "").replace("}", "");
-            if(text.contains("<"))
+            if (text.contains("<"))
             {
                 text = text.substring(text.indexOf("<") + 1, text.indexOf(">"));
             }
@@ -495,14 +501,21 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
             requireElementSet.add(newElement);
 
-            for(PsiElement requireElement : requireElementSet)
+            for (PsiElement requireElement : requireElementSet)
             {
-                lastRequireElement.getParent().addAfter(requireElement, lastRequireElement);
+                if (lastRequireElement != null)
+                {
+                    lastRequireElement.getParent().addAfter(requireElement, lastRequireElement);
+                }
+                else
+                {
+                    root.getParent().addBefore(requireElement, root);
+                }
             }
 
             requireElementSet.remove(newElement);
 
-            for(PsiElement requireElement : requireElementSet)
+            for (PsiElement requireElement : requireElementSet)
             {
                 requireElement.delete();
             }
@@ -530,7 +543,7 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
 
             Set<PsiElement> newElements = new HashSet<PsiElement>();
 
-            for(PsiElement errorElement : errorElementSet)
+            for (PsiElement errorElement : errorElementSet)
             {
                 StringBuilder statement = new StringBuilder("goog.require(\"");
                 statement.append(errorElement.getText().replace("{", "").replace("}", ""));
@@ -543,18 +556,18 @@ public class ValidateRequireStatementsInspection extends LocalInspectionTool
                 requireElementSet.add(newElement);
             }
 
-            for(PsiElement requireElement : requireElementSet)
+            for (PsiElement requireElement : requireElementSet)
             {
                 lastRequireElement.getParent().addAfter(requireElement, lastRequireElement);
             }
 
-            for(PsiElement newElement : newElements)
+            for (PsiElement newElement : newElements)
             {
                 requireElementSet.remove(newElement);
             }
 
 
-            for(PsiElement requireElement : requireElementSet)
+            for (PsiElement requireElement : requireElementSet)
             {
                 requireElement.delete();
             }
